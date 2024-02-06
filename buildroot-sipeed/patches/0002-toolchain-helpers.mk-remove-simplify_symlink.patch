@@ -1,0 +1,29 @@
+From bf0ea658bcb0b2c8ab409754b44f2be082308550 Mon Sep 17 00:00:00 2001
+From: Lu Hui <luhui@sipeed.com>
+Date: Thu, 25 Jan 2024 18:27:49 +0800
+Subject: [PATCH 2/2] toolchain: helpers.mk: remove simplify_symlink
+
+fix build for riscv64 external toolchain make by crosstool-ng
+
+this function will symlink some so file to a directory
+
+remove it is harmless
+---
+ toolchain/helpers.mk | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/toolchain/helpers.mk b/toolchain/helpers.mk
+index e5c838c0..467785a4 100644
+--- a/toolchain/helpers.mk
++++ b/toolchain/helpers.mk
+@@ -137,7 +137,6 @@ copy_toolchain_sysroot = \
+ 			LINKTARGET=`readlink $$i` ; \
+ 			NEWLINKTARGET=$${LINKTARGET\#$$relpath} ; \
+ 			ln -sf $${NEWLINKTARGET} $$i ; \
+-			$(call simplify_symlink,$$i,$(STAGING_DIR)) ; \
+ 		done ; \
+ 	fi ; \
+ 	if [[ ! $$(find $(STAGING_DIR)/lib -name 'ld*.so.*' -print -quit) ]]; then \
+-- 
+2.40.1
+

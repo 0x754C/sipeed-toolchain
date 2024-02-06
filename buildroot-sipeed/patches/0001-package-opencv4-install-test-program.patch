@@ -1,0 +1,29 @@
+From 717e099c560add475e08f441d393544b29f877fc Mon Sep 17 00:00:00 2001
+From: Lu Hui <luhui@sipeed.com>
+Date: Wed, 24 Jan 2024 18:23:32 +0800
+Subject: [PATCH] package: opencv4: install test program
+
+---
+ package/opencv4/opencv4.mk | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/package/opencv4/opencv4.mk b/package/opencv4/opencv4.mk
+index 74cec511..71a26993 100644
+--- a/package/opencv4/opencv4.mk
++++ b/package/opencv4/opencv4.mk
+@@ -44,6 +44,12 @@ ifeq ($(BR2_PACKAGE_OPENCV4_BUILD_TESTS)$(BR2_PACKAGE_OPENCV4_BUILD_PERF_TESTS),
+ OPENCV4_CONF_OPTS += -DINSTALL_TEST=OFF
+ else
+ OPENCV4_CONF_OPTS += -DINSTALL_TEST=ON
++define OPENCV4_INSTALL_TESTBIN
++	ls $(@D)/buildroot-build/bin
++	mkdir -pv $(TARGET_DIR)/usr/bin/
++	cp -vf $(@D)/buildroot-build/bin/* $(TARGET_DIR)/usr/bin/
++endef
++OPENCV4_POST_INSTALL_TARGET_HOOKS += OPENCV4_INSTALL_TESTBIN
+ endif
+ 
+ # OpenCV build options
+-- 
+2.40.1
+

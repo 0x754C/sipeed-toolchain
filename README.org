@@ -1,0 +1,9 @@
+* sipeed toolchain
+
+some config file for sipeed board
+
+* support
+
+* usage
+
+https://buildroot.org/downloads/manual/manual.html
