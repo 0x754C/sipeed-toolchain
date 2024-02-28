@@ -1,0 +1,5 @@
+config BR2_TARGET_FSBL_SG200X
+	bool "fsbl sg200x"
+        depends on BR2_TARGET_OPENSBI
+	help
+	  build sg200x spl

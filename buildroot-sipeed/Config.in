@@ -1,0 +1,1 @@
+source "$BR2_EXTERNAL_SIPEED_PATH/boot/fsbl-sg200x/Kconfig"
