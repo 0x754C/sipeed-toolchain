@@ -1,0 +1,8 @@
+config BR2_PACKAGE_MIDDLEWARE_SG200X
+	bool "middleware-sg200x"
+	depends on BR2_LINUX_KERNEL
+	help
+	  middleware for sg200x
+
+comment "middleware-sg200x needs a Linux kernel to be built"
+	depends on !BR2_LINUX_KERNEL

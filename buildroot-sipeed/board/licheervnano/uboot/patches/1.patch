@@ -2069,13 +2069,146 @@ index 00000000..bb362511
 +};
 diff --git a/board/cvitek/licheervnano_board_init.c b/board/cvitek/licheervnano_board_init.c
 new file mode 100644
-index 00000000..027bbc54
+index 00000000..4c890da0
 --- /dev/null
 +++ b/board/cvitek/licheervnano_board_init.c
-@@ -0,0 +1,3 @@
-+void cvi_board_init(void) {
-+	return;
+@@ -0,0 +1,136 @@
++__attribute__((optimize("O0")))
++// 1.26ms
++void suck_loop(uint64_t loop) {
++        loop = loop * 50 * 100;
++        uint64_t a;
++        while (loop > 0) {
++                a = loop / (uint64_t)99;
++                a = loop / (uint64_t)77;
++                a = loop / (uint64_t)55;
++                a = loop / (uint64_t)33;
++                a = loop / (uint64_t)11;
++                a = loop / (uint64_t)999;
++                a = loop / (uint64_t)777;
++                a = loop / (uint64_t)555;
++                a = loop / (uint64_t)333;
++                a = loop / (uint64_t)111;
++                a = loop / (uint64_t)9999;
++                a = loop / (uint64_t)7777;
++                a = loop / (uint64_t)5555;
++                a = loop / (uint64_t)3333;
++                a = loop / (uint64_t)1111;
++                a = loop / (uint64_t)99999;
++                a = loop / (uint64_t)77777;
++                a = loop / (uint64_t)55555;
++                a = loop / (uint64_t)33333;
++                a = loop / (uint64_t)11111;
++                loop--;
++        }
 +}
++
++static inline void user_led_on(void) {
++	uint32_t val;
++
++        val = mmio_read_32(0x03020000);
++        val |= (1 << 14);
++        mmio_write_32(0x03020000, val);
++}
++
++static inline void user_led_off(void) {
++	uint32_t val;
++
++        val = mmio_read_32(0x03020000);
++        val &= ~(1 << 14);
++        mmio_write_32(0x03020000, val);
++}
++
++static inline void user_led_toggle(void) {
++	uint32_t val;
++
++        val = mmio_read_32(0x03020000);
++        val ^= (1 << 14);
++        mmio_write_32(0x03020000, val);
++}
++
++int cvi_board_init(void)
++{
++        uint32_t val;
++
++	// user led
++	mmio_write_32(0x03001038, 0x3); // GPIOA 14 GPIO_MODE
++	val = mmio_read_32(0x03020004); // GPIOA DIR
++        val |= (1 << 14); // output
++        mmio_write_32(0x03020004, val);
++	user_led_toggle();
++
++        // wifi power reset
++        mmio_write_32(0x0300104C, 0x3); // GPIOA 26
++        val = mmio_read_32(0x03020004); // GPIOA DIR
++        val |= (1 << 26); // output
++        mmio_write_32(0x03020004, val);
++
++        val = mmio_read_32(0x03020000); // signal level
++        val &= ~(1 << 26); // set level to low
++        mmio_write_32(0x03020000, val);
++
++        suck_loop(200);
++	user_led_toggle();
++
++        val = mmio_read_32(0x03020000); // signal level
++        val |= (1 << 26); // set level to high
++        mmio_write_32(0x03020000, val);
++
++        // wifi sdio pinmux
++        mmio_write_32(0x030010D0, 0x0); // D3
++        mmio_write_32(0x030010D4, 0x0); // D2
++        mmio_write_32(0x030010D8, 0x0); // D1
++        mmio_write_32(0x030010DC, 0x0); // D0
++        mmio_write_32(0x030010E0, 0x0); // CMD
++        mmio_write_32(0x030010E4, 0x0); // CLK
++
++        // uart bluetooth
++        mmio_write_32(0x03001070, 0x1); // GPIOA 28 UART1 TX
++        mmio_write_32(0x03001074, 0x1); // GPIOA 29 UART1 RX
++        mmio_write_32(0x03001068, 0x4); // GPIOA 18 UART1 CTS
++        mmio_write_32(0x03001064, 0x4); // GPIOA 19 UART1 RTS
++
++        // PWM
++        //mmio_write_32(0x03001068, 0x2); // GPIOA 18 PWM 6
++
++        // lcd reset
++        mmio_write_32(0x030010A4, 0x0); // PWRGPIO 0 GPIO_MODE
++
++	user_led_toggle();
++        // lcd backlight
++        //mmio_write_32(0x030010EC, 0x0); // GPIOB 0 PWM0_BUCK
++	// for licheervnano alpha
++	val = mmio_read_32(0x03021000); // signal level
++        val |= (1 << 0); // set level to high
++        mmio_write_32(0x03021000, val);
++        val = mmio_read_32(0x03021004); // GPIOB DIR
++        val |= (1 << 0); // output
++        mmio_write_32(0x03021004, val);
++        mmio_write_32(0x030010EC, 0x3); // GPIOB 0 GPIO_MODE
++
++	// for licheervnano beta
++	mmio_write_32(0x030010ac, 0x4); // PWRGPIO 2 PWM 10
++
++        // camera function
++        mmio_write_32(0x0300116C, 0x5); // RX4N CAM_MCLK0
++
++        // camera/tp i2c
++        mmio_write_32(0x03001090, 0x5); // PWR_GPIO6 IIC4_SCL
++        mmio_write_32(0x03001098, 0x5); // PWR_GPIO8 IIC4_SDA
++
++        // tp function
++        mmio_write_32(0x03001084, 0x3); // PWR_SEQ1 PWR_GPIO[3]
++        mmio_write_32(0x03001088, 0x3); // PWR_SEQ2 PWR_GPIO[4]
++        mmio_write_32(0x05027078, 0x11);// Unlock PWR_GPIO[3]
++        mmio_write_32(0x0502707c, 0x11);// Unlock PWR_GPIO[4]
++
++        // wait hardware bootup
++        suck_loop(100);
++	user_led_off();
++        return 0;
++}
++
 diff --git a/board/cvitek/mars/Kconfig b/board/cvitek/mars/Kconfig
 index 0ca29023..ac2dd2d1 100644
 --- a/board/cvitek/mars/Kconfig
@@ -2096,9 +2229,18 @@ index 0ca29023..ac2dd2d1 100644
      default 0x10000 if ENV_IS_IN_SPI_FLASH
      default 0x20000 if ENV_IS_IN_MMC
 diff --git a/board/cvitek/mars/board.c b/board/cvitek/mars/board.c
-index 9c961ac1..0403defd 100644
+index 9c961ac1..c2d6ff07 100644
 --- a/board/cvitek/mars/board.c
 +++ b/board/cvitek/mars/board.c
+@@ -69,7 +69,7 @@ void pinmux_config(int io_type)
+ 		break;
+ 		case PINMUX_SDIO0:
+ 			PINMUX_CONFIG(SD0_CD, SDIO0_CD);
+-			PINMUX_CONFIG(SD0_PWR_EN, SDIO0_PWR_EN);
++			//PINMUX_CONFIG(SD0_PWR_EN, SDIO0_PWR_EN);
+ 			PINMUX_CONFIG(SD0_CMD, SDIO0_CMD);
+ 			PINMUX_CONFIG(SD0_CLK, SDIO0_CLK);
+ 			PINMUX_CONFIG(SD0_D0, SDIO0_D_0);
 @@ -152,7 +152,11 @@ void pinmux_config(int io_type)
  	}
  }
@@ -2111,6 +2253,42 @@ index 9c961ac1..0403defd 100644
  
  #if defined(CONFIG_PHY_CVITEK) /* config cvitek cv181x eth internal phy on ASIC board */
  static void cv181x_ephy_id_init(void)
+diff --git a/cmd/Makefile b/cmd/Makefile
+index 697b3824..c4df550d 100644
+--- a/cmd/Makefile
++++ b/cmd/Makefile
+@@ -68,7 +68,7 @@ obj-$(CONFIG_CMD_FAT) += fat.o
+ obj-$(CONFIG_CMD_FDT) += fdt.o
+ obj-$(CONFIG_CMD_SQUASHFS) += sqfs.o
+ obj-$(CONFIG_CMD_FLASH) += flash.o
+-obj-$(CONFIG_CMD_CVI_JPEG) += cvi_jpeg.o
++#obj-$(CONFIG_CMD_CVI_JPEG) += cvi_jpeg.o
+ obj-$(CONFIG_CMD_CVI_VO) += cvi_vo.o
+ obj-$(CONFIG_CMD_CVI_UPDATE) += cvi_update.o
+ obj-$(CONFIG_CMD_CVI_UPDATE) += cvi_utask.o
+diff --git a/cmd/cvi_vo.c b/cmd/cvi_vo.c
+index 41124a87..652c499e 100644
+--- a/cmd/cvi_vo.c
++++ b/cmd/cvi_vo.c
+@@ -52,6 +52,9 @@ int i80_init(int devno, const struct _VO_I80_INSTR_S *cmds, int size)
+ static int dsi_init(int devno, const struct dsc_instr *cmds, int size)
+ {
+ 	int ret;
++	if (cmds == NULL) {
++		return 0;
++	}
+ 
+ 	for (int i = 0; i < size; i++) {
+ 		const struct dsc_instr *instr = &cmds[i];
+@@ -155,7 +158,7 @@ static void dsi_panel_init(void)
+ 	u8 zero = panel_desc.hs_timing_cfg->zero;
+ 	u8 trail = panel_desc.hs_timing_cfg->trail;
+ 
+-	debug("Init panel %s\n", panel_desc.panel_name);
++	printf("Init panel %s\n", panel_desc.panel_name);
+ 	mipi_tx_set_combo_dev_cfg(panel_desc.dev_cfg);
+ 	dsi_init(0, panel_desc.dsi_init_cmds, panel_desc.dsi_init_cmds_size);
+ 	dphy_set_hs_settle(prepare, zero, trail);
 diff --git a/common/autoboot.c b/common/autoboot.c
 index 1af23c1b..661a38de 100644
 --- a/common/autoboot.c
@@ -2139,10 +2317,10 @@ index 1af23c1b..661a38de 100644
  	stored_bootdelay = bootdelay;
 diff --git a/configs/licheervnano_defconfig b/configs/licheervnano_defconfig
 new file mode 100644
-index 00000000..e5c5b8ff
+index 00000000..ddf83a57
 --- /dev/null
 +++ b/configs/licheervnano_defconfig
-@@ -0,0 +1,50 @@
+@@ -0,0 +1,70 @@
 +CONFIG_RISCV=y
 +CONFIG_SYS_MALLOC_F_LEN=0x2000
 +CONFIG_NR_DRAM_BANKS=1
@@ -2191,8 +2369,109 @@ index 00000000..e5c5b8ff
 +# CONFIG_CMD_CVI_UPDATE is not set
 +CONFIG_LICHEERVNANO_BOARD_INIT=y
 +CONFIG_USE_BOOTCOMMAND=y
-+CONFIG_BOOTCOMMAND="mmc dev 0; mmc info; fatload mmc 0:1 0x81800000 boot.sd; setenv bootargs console=ttyS0,115200 earlycon=sbi riscv.fwsz=0x80000 loglevel=9 root=/dev/mmcblk0p2; bootm 0x81800000#config-licheervnano"
++CONFIG_BOOTCOMMAND="startvo 0 8192 0; mmc dev 0; mmc info; fatload mmc 0:1 0x81800000 boot.sd; setenv bootargs console=ttyS0,115200 earlycon=sbi riscv.fwsz=0x80000 loglevel=9 root=/dev/mmcblk0p2; bootm 0x81800000#config-licheervnano"
 +CONFIG_ENV_IMPORT_FDT=y
++CONFIG_UDP_FUNCTION_FASTBOOT=y
++CONFIG_FASTBOOT_FLASH=y
++CONFIG_FASTBOOT_BUF_ADDR=0x81800000
++CONFIG_FASTBOOT_BUF_SIZE=0x1000000
++CONFIG_FASTBOOT_FLASH_MMC_DEV=0
++CONFIG_DISPLAY=y
++CONFIG_DM_VIDEO=y
++CONFIG_DM_GPIO=y
++CONFIG_DWAPB_GPIO=y
++CONFIG_CMD_VIDCONSOLE=y
++CONFIG_VIDEO_BPP16=y
++CONFIG_VIDEO_BPP32=y
++CONFIG_VIDEO_CVITEK=y
++CONFIG_DISPLAY_CVITEK_MIPI=y
++CONFIG_BMP_16BPP=y
++CONFIG_BMP_24BPP=y
++CONFIG_BMP_32BPP=y
++CONFIG_BOOTLOGO=y
++CONFIG_CMD_CVI_VO=y
++CONFIG_CMD_GPIO=y
+diff --git a/drivers/Makefile b/drivers/Makefile
+index 3cc03cbc..c20bd979 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -32,7 +32,7 @@ obj-$(CONFIG_$(SPL_TPL_)TPM) += tpm/
+ obj-$(CONFIG_$(SPL_TPL_)ACPI_PMC) += power/acpi_pmc/
+ obj-$(CONFIG_XEN) += xen/
+ obj-$(CONFIG_$(SPL_)FPGA) += fpga/
+-obj-$(CONFIG_CMD_CVI_JPEG) += jpeg/
++#obj-$(CONFIG_CMD_CVI_JPEG) += jpeg/
+ 
+ ifndef CONFIG_TPL_BUILD
+ ifdef CONFIG_SPL_BUILD
+diff --git a/drivers/mmc/cvitek/sdhci-mars.c b/drivers/mmc/cvitek/sdhci-mars.c
+index faecfec8..b0dd95fc 100644
+--- a/drivers/mmc/cvitek/sdhci-mars.c
++++ b/drivers/mmc/cvitek/sdhci-mars.c
+@@ -155,7 +155,7 @@ static void cvi_sdio0_pad_function(bool bunplug)
+ 	u8 val = (bunplug) ? 0x3 : 0x0;
+ 
+ 	mmio_write_32(PAD_SDIO0_CD_REG, 0x0);
+-	mmio_write_32(PAD_SDIO0_PWR_EN_REG, 0x0);
++	//mmio_write_32(PAD_SDIO0_PWR_EN_REG, 0x0);
+ 	mmio_write_32(PAD_SDIO0_CLK_REG, val);
+ 	mmio_write_32(PAD_SDIO0_CMD_REG, val);
+ 	mmio_write_32(PAD_SDIO0_D0_REG, val);
+diff --git a/drivers/video/cvitek/cvi_disp.c b/drivers/video/cvitek/cvi_disp.c
+index 23ce46b1..0e6db8a1 100644
+--- a/drivers/video/cvitek/cvi_disp.c
++++ b/drivers/video/cvitek/cvi_disp.c
+@@ -106,6 +106,7 @@ static int cvi_vo_probe(struct udevice *dev)
+ 
+ 	video_set_flush_dcache(dev, 1);
+ 
++	printf("cvitek vo probe over\n");
+ 	return ret;
+ }
+ 
+diff --git a/drivers/video/cvitek/cvi_mipi.c b/drivers/video/cvitek/cvi_mipi.c
+index 3a045735..bb8b67f9 100644
+--- a/drivers/video/cvitek/cvi_mipi.c
++++ b/drivers/video/cvitek/cvi_mipi.c
+@@ -152,33 +152,33 @@ int mipi_tx_set_combo_dev_cfg(const struct combo_dev_cfg_s *dev_cfg)
+ 				ctrl_gpios.disp_power_ct_gpio.flags & GPIOD_ACTIVE_LOW ? 0 : 1);
+ 	if (ret < 0) {
+ 		printf("dm_gpio_set_value(disp_power_ct_gpio, deassert) failed: %d", ret);
+-		return ret;
++		//return ret;
+ 	}
+ 	ret = dm_gpio_set_value(&ctrl_gpios.disp_pwm_gpio,
+ 				ctrl_gpios.disp_pwm_gpio.flags & GPIOD_ACTIVE_LOW ? 0 : 1);
+ 	if (ret < 0) {
+ 		printf("dm_gpio_set_value(disp_pwm_gpio, deassert) failed: %d", ret);
+-		return ret;
++		//return ret;
+ 	}
+ 	ret = dm_gpio_set_value(&ctrl_gpios.disp_reset_gpio,
+ 				ctrl_gpios.disp_reset_gpio.flags & GPIOD_ACTIVE_LOW ? 0 : 1);
+ 	if (ret < 0) {
+ 		printf("dm_gpio_set_value(disp_reset_gpio, deassert) failed: %d", ret);
+-		return ret;
++		//return ret;
+ 	}
+ 	mdelay(10);
+ 	ret = dm_gpio_set_value(&ctrl_gpios.disp_reset_gpio,
+ 				ctrl_gpios.disp_reset_gpio.flags & GPIOD_ACTIVE_LOW ? 1 : 0);
+ 	if (ret < 0) {
+ 		printf("dm_gpio_set_value(disp_reset_gpio, deassert) failed: %d", ret);
+-		return ret;
++		//return ret;
+ 	}
+ 	mdelay(10);
+ 	ret = dm_gpio_set_value(&ctrl_gpios.disp_reset_gpio,
+ 				ctrl_gpios.disp_reset_gpio.flags & GPIOD_ACTIVE_LOW ? 0 : 1);
+ 	if (ret < 0) {
+ 		printf("dm_gpio_set_value(disp_reset_gpio, deassert) failed: %d", ret);
+-		return ret;
++		//return ret;
+ 	}
+ 	mdelay(100);
+ 
 diff --git a/dts/Makefile b/dts/Makefile
 index b4f917d7..16be79f2 100644
 --- a/dts/Makefile
@@ -2209,7 +2488,7 @@ index b4f917d7..16be79f2 100644
  
  $(obj)/dt-$(SPL_NAME).dtb: dts/dt.dtb $(objtree)/tools/fdtgrep FORCE
 diff --git a/include/configs/mars-asic.h b/include/configs/mars-asic.h
-index 12cdefac..724aac11 100644
+index 12cdefac..15fd5c75 100644
 --- a/include/configs/mars-asic.h
 +++ b/include/configs/mars-asic.h
 @@ -20,14 +20,17 @@
@@ -2232,7 +2511,17 @@ index 12cdefac..724aac11 100644
  
  #if defined(__aarch64__)
  #define CONFIG_ARMV8_SWITCH_TO_EL1
-@@ -311,9 +314,9 @@
+@@ -274,7 +277,9 @@
+ 
+ 	/* BOOTLOGO */
+ 	#ifdef CONFIG_BOOTLOGO
++		/*
+ 		#define SHOWLOGOCMD "run showlogo;"
++		*/
+ 
+ 		#ifdef CONFIG_NAND_SUPPORT
+ 			#define LOAD_LOGO "nand read " LOGO_READ_ADDR " MISC;"
+@@ -311,9 +316,9 @@
  	#ifdef CONFIG_ENABLE_ALIOS_UPDATE
  		#define CONFIG_BOOTCOMMAND	"cvi_update_rtos"
  	#elif CONFIG_SD_BOOT
@@ -2244,7 +2533,7 @@ index 12cdefac..724aac11 100644
  	#endif
  
  	#if defined(CONFIG_NAND_SUPPORT)
-@@ -341,7 +344,7 @@
+@@ -341,7 +346,7 @@
  
  #else
  	/* define your environment */
@@ -2273,6 +2562,502 @@ index 00000000..ba45dce3
 +#define SPL_BOOT_PART_OFFSET 0x0
 +
 +#endif
+diff --git a/include/cvitek/cvi_panels/cvi_panels.h b/include/cvitek/cvi_panels/cvi_panels.h
+index d74bcd8c..99c11416 100644
+--- a/include/cvitek/cvi_panels/cvi_panels.h
++++ b/include/cvitek/cvi_panels/cvi_panels.h
+@@ -24,6 +24,7 @@ struct panel_desc_s {
+ 	struct cvi_lvds_cfg_s *lvds_cfg;
+ };
+ 
++
+ #ifdef MIPI_PANEL_HX8394
+ #include "dsi_hx8394_evb.h"
+ static struct panel_desc_s panel_desc = {
+@@ -114,6 +115,15 @@ static struct panel_desc_s panel_desc = {
+ 	.dsi_init_cmds = dsi_init_cmds_st7701_480x800,
+ 	.dsi_init_cmds_size = ARRAY_SIZE(dsi_init_cmds_st7701_480x800)
+ };
++#elif defined(MIPI_PANEL_ST7701_HD228001C31)
++#include "dsi_st7701_hd228001c31.h"
++static struct panel_desc_s panel_desc = {
++	.panel_name = "ST7701-368x552",
++	.dev_cfg = &dev_cfg_st7701_368x552,
++	.hs_timing_cfg = &hs_timing_cfg_st7701_368x552,
++	.dsi_init_cmds = dsi_init_cmds_st7701_368x552,
++	.dsi_init_cmds_size = ARRAY_SIZE(dsi_init_cmds_st7701_368x552)
++};
+ #elif defined(MIPI_PANEL_ST7785M)
+ #include "dsi_st7785m.h"
+ static struct panel_desc_s panel_desc = {
+@@ -130,19 +140,37 @@ static struct panel_desc_s panel_desc = {
+ 	.i80_init_cmds = i80_st7789v_init_cmds,
+ 	.i80_init_cmds_size = ARRAY_SIZE(i80_st7789v_init_cmds)
+ };
++#elif defined(MIPI_PANEL_ZCT2133V1)
++#include "dsi_zct2133v1.h"
++static struct panel_desc_s panel_desc = {
++        .panel_name = "zct2133v1-800x1280",
++        .dev_cfg = &dev_cfg_zct2133v1_800x1280,
++        .hs_timing_cfg = &hs_timing_cfg_zct2133v1_800x1280,
++        .dsi_init_cmds = dsi_init_cmds_zct2133v1_800x1280,
++        .dsi_init_cmds_size = ARRAY_SIZE(dsi_init_cmds_zct2133v1_800x1280)
++};
++#elif defined(MIPI_PANEL_DUMMY)
++#include "dsi_dummy.h"
++static struct panel_desc_s panel_desc = {
++        .panel_name = "dummy-1920x1080",
++        .dev_cfg = &dev_cfg_dummy_1920x1080,
++        .hs_timing_cfg = &hs_timing_cfg_dummy_1920x1080,
++        .dsi_init_cmds = NULL,
++        .dsi_init_cmds_size = 0,
++};
+ #elif defined(LVDS_PANEL_EK79202)
+ #include "lvds_ek79202.h"
+ static struct panel_desc_s panel_desc = {
+ 	.lvds_cfg = &lvds_ek79202_cfg
+ };
+ #else
+-#include "dsi_hx8394_evb.h"
++#include "dsi_dummy.h"
+ static struct panel_desc_s panel_desc = {
+-	.panel_name = "HX8394-720x1280",
+-	.dev_cfg = &dev_cfg_hx8394_720x1280,
+-	.hs_timing_cfg = &hs_timing_cfg_hx8394_720x1280,
+-	.dsi_init_cmds = dsi_init_cmds_hx8394_720x1280,
+-	.dsi_init_cmds_size = ARRAY_SIZE(dsi_init_cmds_hx8394_720x1280)
++        .panel_name = "dummy-1920x1080",
++        .dev_cfg = &dev_cfg_dummy_1920x1080,
++        .hs_timing_cfg = &hs_timing_cfg_dummy_1920x1080,
++        .dsi_init_cmds = NULL,
++        .dsi_init_cmds_size = 0,
+ };
+ #endif
+ 
+diff --git a/include/cvitek/cvi_panels/dsi_dummy.h b/include/cvitek/cvi_panels/dsi_dummy.h
+new file mode 100644
+index 00000000..0c43a31b
+--- /dev/null
++++ b/include/cvitek/cvi_panels/dsi_dummy.h
+@@ -0,0 +1,50 @@
++#ifndef _MIPI_TX_PARAM_DUMMY_H_
++#define _MIPI_TX_PARAM_DUMMY_H_
++
++#ifndef __UBOOT__
++#include <linux/vo_mipi_tx.h>
++#include <linux/cvi_comm_mipi_tx.h>
++#else
++#include <cvi_mipi.h>
++#endif
++
++#define DUMMY_VACT  1080
++#define DUMMY_VSA   5
++#define DUMMY_VBP   23
++#define DUMMY_VFP   3
++
++#define DUMMY_HACT  1920
++#define DUMMY_HSA   32
++#define DUMMY_HBP   80
++#define DUMMY_HFP   48
++
++#define DUMMY_PIXEL_CLK(x) ((x##_VACT + x##_VSA + x##_VBP + x##_VFP) \
++        * (x##_HACT + x##_HSA + x##_HBP + x##_HFP) * 60 / 1000)
++
++struct combo_dev_cfg_s dev_cfg_dummy_1920x1080 = {
++        .devno = 0,
++        .lane_id = {MIPI_TX_LANE_0, MIPI_TX_LANE_CLK, MIPI_TX_LANE_1, -1, -1},
++        .lane_pn_swap = {false, false, false, false, false},
++        .output_mode = OUTPUT_MODE_DSI_VIDEO,
++        .video_mode = BURST_MODE,
++        .output_format = OUT_FORMAT_RGB_24_BIT,
++        .sync_info = {
++                .vid_hsa_pixels = DUMMY_HSA,
++                .vid_hbp_pixels = DUMMY_HBP,
++                .vid_hfp_pixels = DUMMY_HFP,
++                .vid_hline_pixels = DUMMY_HACT,
++                .vid_vsa_lines = DUMMY_VSA,
++                .vid_vbp_lines = DUMMY_VBP,
++                .vid_vfp_lines = DUMMY_VFP,
++                .vid_active_lines = DUMMY_VACT,
++                .vid_vsa_pos_polarity = false,
++                .vid_hsa_pos_polarity = true,
++        },
++        .pixel_clk = DUMMY_PIXEL_CLK(DUMMY),
++};
++
++const struct hs_settle_s hs_timing_cfg_dummy_1920x1080 = { .prepare = 6, .zero = 32, .trail = 1 };
++
++#else
++#error "MIPI_TX_PARAM multi-delcaration!!"
++#endif // _MIPI_TX_PARAM_DUMMY_H_
+diff --git a/include/cvitek/cvi_panels/dsi_st7701_hd228001c31.h b/include/cvitek/cvi_panels/dsi_st7701_hd228001c31.h
+new file mode 100644
+index 00000000..cd70353d
+--- /dev/null
++++ b/include/cvitek/cvi_panels/dsi_st7701_hd228001c31.h
+@@ -0,0 +1,185 @@
++#ifndef _MIPI_TX_PARAM_ST_7701_HD228001C31_H_
++#define _MIPI_TX_PARAM_ST_7701_HD228001C31_H_
++
++#ifndef __UBOOT__
++#include <linux/vo_mipi_tx.h>
++#include <linux/cvi_comm_mipi_tx.h>
++#else
++#include <cvi_mipi.h>
++#endif
++
++// vendor
++/*
++#define ST7701_HD228001C31_VACT	552
++#define ST7701_HD228001C31_VSA		2
++#define ST7701_HD228001C31_VBP		20
++#define ST7701_HD228001C31_VFP		20
++
++#define ST7701_HD228001C31_HACT		368
++#define ST7701_HD228001C31_HSA		8
++#define ST7701_HD228001C31_HBP		160
++#define ST7701_HD228001C31_HFP		160
++*/
++
++// calc 2
++#define ST7701_HD228001C31_VACT		552
++#define ST7701_HD228001C31_VSA		10
++#define ST7701_HD228001C31_VBP		20
++#define ST7701_HD228001C31_VFP		20
++
++#define ST7701_HD228001C31_HACT		368
++#define ST7701_HD228001C31_HSA		8
++#define ST7701_HD228001C31_HBP		160
++#define ST7701_HD228001C31_HFP		160
++
++
++
++
++// calc
++/*
++#define ST7701_HD228001C31_VACT	552
++#define ST7701_HD228001C31_VSA	10
++#define ST7701_HD228001C31_VBP	6
++#define ST7701_HD228001C31_VFP	3
++
++#define ST7701_HD228001C31_HACT	368
++#define ST7701_HD228001C31_HSA	32
++#define ST7701_HD228001C31_HBP	80
++#define ST7701_HD228001C31_HFP	48
++*/
++
++#define HD22_PIXEL_CLK(x) ((x##_VACT + x##_VSA + x##_VBP + x##_VFP) \
++	* (x##_HACT + x##_HSA + x##_HBP + x##_HFP) * 75 / 1000)
++
++struct combo_dev_cfg_s dev_cfg_st7701_368x552 = {
++	.devno = 0,
++	.lane_id = {MIPI_TX_LANE_0, MIPI_TX_LANE_CLK, MIPI_TX_LANE_1, -1, -1},
++	.lane_pn_swap = {false, false, false, false, false},
++	.output_mode = OUTPUT_MODE_DSI_VIDEO,
++	.video_mode = BURST_MODE,
++	.output_format = OUT_FORMAT_RGB_24_BIT,
++	.sync_info = {
++		.vid_hsa_pixels = ST7701_HD228001C31_HSA,
++		.vid_hbp_pixels = ST7701_HD228001C31_HBP,
++		.vid_hfp_pixels = ST7701_HD228001C31_HFP,
++		.vid_hline_pixels = ST7701_HD228001C31_HACT,
++		.vid_vsa_lines = ST7701_HD228001C31_VSA,
++		.vid_vbp_lines = ST7701_HD228001C31_VBP,
++		.vid_vfp_lines = ST7701_HD228001C31_VFP,
++		.vid_active_lines = ST7701_HD228001C31_VACT,
++		.vid_vsa_pos_polarity = true,
++		.vid_hsa_pos_polarity = false,
++	},
++	.pixel_clk = HD22_PIXEL_CLK(ST7701_HD228001C31),
++};
++
++const struct hs_settle_s hs_timing_cfg_st7701_368x552 = { .prepare = 6, .zero = 32, .trail = 1 };
++
++#ifndef CVI_U8
++#define CVI_U8 unsigned char
++#endif
++
++static CVI_U8 data_st7701_hd228001c31_1[] = { 0xff, 0x77,0x01,0x00,0x00,0x13 }; // 6
++static CVI_U8 data_st7701_hd228001c31_2[] = { 0xef, 0x08 }; // 2
++static CVI_U8 data_st7701_hd228001c31_3[] = { 0xff, 0x77,0x01,0x00,0x00,0x10 }; // 6
++static CVI_U8 data_st7701_hd228001c31_4[] = { 0xc0, 0x44, 0x00 }; // 3
++static CVI_U8 data_st7701_hd228001c31_5[] = { 0xc1, 0x0b, 0x02 }; // 3
++static CVI_U8 data_st7701_hd228001c31_6[] = { 0xc2, 0x07, 0x1f }; // 3
++static CVI_U8 data_st7701_hd228001c31_7[] = { 0xcc, 0x10 }; // 2
++static CVI_U8 data_st7701_hd228001c31_8[] = { 0xb0, 0x0F,0x1E,0x25,0x0D,0x11,0x06,0x12,0x08,0x08,0x2A,0x05,0x12,0x10,0x2B,0x32,0x1F }; // 17
++static CVI_U8 data_st7701_hd228001c31_9[] = { 0xb1, 0x0F,0x1E,0x25,0x0D,0x11,0x05,0x12,0x08,0x08,0x2B,0x05,0x12,0x10,0x2B,0x32,0x1F }; // 17
++static CVI_U8 data_st7701_hd228001c31_10[] = { 0xff, 0x77,0x01,0x00,0x00,0x11 }; // 6
++static CVI_U8 data_st7701_hd228001c31_11[] = { 0xb0, 0x35 }; // 2
++static CVI_U8 data_st7701_hd228001c31_12[] = { 0xb1, 0x45 }; // 2
++static CVI_U8 data_st7701_hd228001c31_13[] = { 0xb2, 0x87 }; // 2
++static CVI_U8 data_st7701_hd228001c31_14[] = { 0xb3, 0x80 }; // 2
++static CVI_U8 data_st7701_hd228001c31_15[] = { 0xb5, 0x80 }; // 2 
++static CVI_U8 data_st7701_hd228001c31_16[] = { 0xb7, 0x85 }; // 2
++static CVI_U8 data_st7701_hd228001c31_17[] = { 0xb8, 0x11 }; // 2
++static CVI_U8 data_st7701_hd228001c31_18[] = { 0xbb, 0x03 }; // 2
++static CVI_U8 data_st7701_hd228001c31_19[] = { 0xc0, 0x07 }; // 2
++static CVI_U8 data_st7701_hd228001c31_20[] = { 0xc1, 0x78 }; // 2
++static CVI_U8 data_st7701_hd228001c31_21[] = { 0xc2, 0x78 }; // 2
++static CVI_U8 data_st7701_hd228001c31_22[] = { 0xd0, 0x88 }; // 2
++// 23 delay 100 ms
++static CVI_U8 data_st7701_hd228001c31_24[] = { 0xe0, 0x00, 0x00, 0x02}; // 4
++static CVI_U8 data_st7701_hd228001c31_25[] = { 0xe1, 0x03,0x30,0x07,0x30,0x02,0x30,0x06,0x30,0x00,0x44,0x44 }; //12
++static CVI_U8 data_st7701_hd228001c31_26[] = { 0xe2, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }; //12
++static CVI_U8 data_st7701_hd228001c31_27[] = { 0xe3, 0x00,0x00,0x22,0x00 }; // 5
++static CVI_U8 data_st7701_hd228001c31_28[] = { 0xe4, 0x22, 0x00 }; // 3
++static CVI_U8 data_st7701_hd228001c31_29[] = { 0xe5, 0x0A,0x34,0x30,0xE0,0x08,0x32,0x30,0xE0,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }; // 17
++static CVI_U8 data_st7701_hd228001c31_30[] = { 0xe6, 0x00, 0x00, 0x22, 0x00 }; // 5
++static CVI_U8 data_st7701_hd228001c31_31[] = { 0xe7, 0x22, 0x00 }; // 3
++static CVI_U8 data_st7701_hd228001c31_32[] = { 0xe8, 0x09,0x33,0x30,0xE0,0x07,0x31,0x30,0xE0,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }; // 17
++static CVI_U8 data_st7701_hd228001c31_33[] = { 0xeb, 0x00,0x01,0x10,0x10,0x11,0x00,0x00 }; // 8
++static CVI_U8 data_st7701_hd228001c31_34[] = { 0xed, 0xFF,0xFF,0xF0,0x45,0xBA,0x2F,0xFF,0xFF,0xFF,0xFF,0xF2,0xAB,0x54,0x0F,0xFF,0xFF }; // 17
++static CVI_U8 data_st7701_hd228001c31_35[] = { 0xef, 0x08,0x08,0x08,0x45,0x3F,0x54 }; // 7
++static CVI_U8 data_st7701_hd228001c31_36[] = { 0xff, 0x77,0x01,0x00,0x00,0x13 }; // 6
++static CVI_U8 data_st7701_hd228001c31_37[] = { 0xe8, 0x00, 0x0e }; // 3
++static CVI_U8 data_st7701_hd228001c31_38[] = { 0x11 }; // 1
++// 39 delay 120 ms
++static CVI_U8 data_st7701_hd228001c31_40[] = { 0xe8, 0x00, 0x0c }; // 3
++// 41 delay 10 ms
++static CVI_U8 data_st7701_hd228001c31_42[] = { 0xe8, 0x00, 0x00 }; // 3
++static CVI_U8 data_st7701_hd228001c31_43[] = { 0xff, 0x77,0x01,0x00,0x00,0x00 }; // 6
++static CVI_U8 data_st7701_hd228001c31_44[] = { 0x29 }; // 1
++// 45 delay 50 ms
++
++
++// len == 1 , type 0x05
++// len == 2 , type 0x15 or type 23
++// len >= 3 , type 0x29 or type 0x39
++#define TYPE1_DCS_SHORT_WRITE 0x05
++#define TYPE2_DCS_SHORT_WRITE 0x15
++#define TYPE3_DCS_LONG_WRITE 0x39
++#define TYPE3_GENERIC_LONG_WRITE 0x29
++const struct dsc_instr dsi_init_cmds_st7701_368x552[] = {
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 6, .data = data_st7701_hd228001c31_1 },
++  {.delay = 0, .data_type = TYPE2_DCS_SHORT_WRITE, .size = 2, .data = data_st7701_hd228001c31_2 },
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 6, .data = data_st7701_hd228001c31_3 },
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 3, .data = data_st7701_hd228001c31_4 },
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 3, .data = data_st7701_hd228001c31_5 },
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 3, .data = data_st7701_hd228001c31_6 },
++  {.delay = 0, .data_type = TYPE2_DCS_SHORT_WRITE, .size = 2, .data = data_st7701_hd228001c31_7 },
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 17, .data = data_st7701_hd228001c31_8 },
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 17, .data = data_st7701_hd228001c31_9 },
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 6, .data = data_st7701_hd228001c31_10 },
++  {.delay = 0, .data_type = TYPE2_DCS_SHORT_WRITE, .size = 2, .data = data_st7701_hd228001c31_11 },
++  {.delay = 0, .data_type = TYPE2_DCS_SHORT_WRITE, .size = 2, .data = data_st7701_hd228001c31_12 },
++  {.delay = 0, .data_type = TYPE2_DCS_SHORT_WRITE, .size = 2, .data = data_st7701_hd228001c31_13 },
++  {.delay = 0, .data_type = TYPE2_DCS_SHORT_WRITE, .size = 2, .data = data_st7701_hd228001c31_14 },
++  {.delay = 0, .data_type = TYPE2_DCS_SHORT_WRITE, .size = 2, .data = data_st7701_hd228001c31_15 },
++  {.delay = 0, .data_type = TYPE2_DCS_SHORT_WRITE, .size = 2, .data = data_st7701_hd228001c31_16 },
++  {.delay = 0, .data_type = TYPE2_DCS_SHORT_WRITE, .size = 2, .data = data_st7701_hd228001c31_17 },
++  {.delay = 0, .data_type = TYPE2_DCS_SHORT_WRITE, .size = 2, .data = data_st7701_hd228001c31_18 },
++  {.delay = 0, .data_type = TYPE2_DCS_SHORT_WRITE, .size = 2, .data = data_st7701_hd228001c31_19 },
++  {.delay = 0, .data_type = TYPE2_DCS_SHORT_WRITE, .size = 2, .data = data_st7701_hd228001c31_20 },
++  {.delay = 0, .data_type = TYPE2_DCS_SHORT_WRITE, .size = 2, .data = data_st7701_hd228001c31_21 },
++  {.delay = 100, .data_type = TYPE2_DCS_SHORT_WRITE, .size = 2, .data = data_st7701_hd228001c31_22 },
++  // 23 is delay 100ms
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 4, .data = data_st7701_hd228001c31_24 },
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 12, .data = data_st7701_hd228001c31_25 },
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 12, .data = data_st7701_hd228001c31_26 },
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 5, .data = data_st7701_hd228001c31_27 },
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 3, .data = data_st7701_hd228001c31_28 },
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 17, .data = data_st7701_hd228001c31_29 },
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 5, .data = data_st7701_hd228001c31_30 },
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 3, .data = data_st7701_hd228001c31_31 },
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 17, .data = data_st7701_hd228001c31_32 },
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 8, .data = data_st7701_hd228001c31_33 },
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 17, .data = data_st7701_hd228001c31_34 },
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 7, .data = data_st7701_hd228001c31_35 },
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 6, .data = data_st7701_hd228001c31_36 },
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 3, .data = data_st7701_hd228001c31_37 },
++  {.delay = 120, .data_type = TYPE1_DCS_SHORT_WRITE, .size = 1, .data = data_st7701_hd228001c31_38 },
++  // 39 is delay 120ms
++  {.delay = 10, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 3, .data = data_st7701_hd228001c31_40 },
++  // 41 is delay 10ms
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 3, .data = data_st7701_hd228001c31_42 },
++  {.delay = 0, .data_type = TYPE3_GENERIC_LONG_WRITE, .size = 6, .data = data_st7701_hd228001c31_43 },
++  {.delay = 50, .data_type = TYPE1_DCS_SHORT_WRITE, .size = 1, .data = data_st7701_hd228001c31_44 },
++};
++
++#else
++#error "MIPI_TX_PARAM multi-delcaration!!"
++#endif // _MIPI_TX_PARAM_ST_7701_HD22801C31_H_
+diff --git a/include/cvitek/cvi_panels/dsi_zct2133v1.h b/include/cvitek/cvi_panels/dsi_zct2133v1.h
+new file mode 100644
+index 00000000..842744ca
+--- /dev/null
++++ b/include/cvitek/cvi_panels/dsi_zct2133v1.h
+@@ -0,0 +1,155 @@
++#ifndef _MIPI_TX_PARAM_ZCT2133V1_H_
++#define _MIPI_TX_PARAM_ZCT2133V1_H_
++
++#ifndef __UBOOT__
++#include <linux/vo_mipi_tx.h>
++#include <linux/cvi_comm_mipi_tx.h>
++#else
++#include <cvi_mipi.h>
++#endif
++
++#define ZCT2133V1_VACT  1280
++#define ZCT2133V1_VSA   10
++#define ZCT2133V1_VBP   34
++#define ZCT2133V1_VFP   3
++
++#define ZCT2133V1_HACT  800
++#define ZCT2133V1_HSA   80
++#define ZCT2133V1_HBP   136
++#define ZCT2133V1_HFP   56
++
++#define ZCT_PIXEL_CLK(x) ((x##_VACT + x##_VSA + x##_VBP + x##_VFP) \
++        * (x##_HACT + x##_HSA + x##_HBP + x##_HFP) * 60 / 1000)
++
++struct combo_dev_cfg_s dev_cfg_zct2133v1_800x1280 = {
++        .devno = 0,
++        .lane_id = {MIPI_TX_LANE_0, MIPI_TX_LANE_CLK, MIPI_TX_LANE_1, -1, -1},
++        .lane_pn_swap = {false, false, false, false, false},
++        .output_mode = OUTPUT_MODE_DSI_VIDEO,
++        .video_mode = BURST_MODE,
++        .output_format = OUT_FORMAT_RGB_24_BIT,
++        .sync_info = {
++                .vid_hsa_pixels = ZCT2133V1_HSA,
++                .vid_hbp_pixels = ZCT2133V1_HBP,
++                .vid_hfp_pixels = ZCT2133V1_HFP,
++                .vid_hline_pixels = ZCT2133V1_HACT,
++                .vid_vsa_lines = ZCT2133V1_VSA,
++                .vid_vbp_lines = ZCT2133V1_VBP,
++                .vid_vfp_lines = ZCT2133V1_VFP,
++                .vid_active_lines = ZCT2133V1_VACT,
++                .vid_vsa_pos_polarity = true,
++                .vid_hsa_pos_polarity = false,
++        },
++        .pixel_clk = ZCT_PIXEL_CLK(ZCT2133V1),
++};
++
++const struct hs_settle_s hs_timing_cfg_zct2133v1_800x1280 = { .prepare = 6, .zero = 32, .trail = 1 };
++
++#ifndef CVI_U8
++#define CVI_U8 unsigned char
++#endif
++
++static CVI_U8 data_zct2133v1_0[] = { 0xE1, 0x93 };
++static CVI_U8 data_zct2133v1_1[] = { 0xE2, 0x65 };
++static CVI_U8 data_zct2133v1_2[] = { 0xE3, 0xF8 };
++static CVI_U8 data_zct2133v1_3[] = { 0x80, 0x01 };
++static CVI_U8 data_zct2133v1_4[] = { 0x11 };
++static CVI_U8 data_zct2133v1_5[] = { 0x29 };
++
++// len == 1 , type 0x05
++// len == 2 , type 0x15 or type 23
++// len >= 3 , type 0x29 or type 0x39
++#define TYPE1 0x05
++#define TYPE2 0x15
++#define TYPE3 0x29
++
++const struct dsc_instr dsi_init_cmds_zct2133v1_800x1280[] = {
++        {.delay = 0, .data_type = TYPE2, .size = 2, .data = data_zct2133v1_0 },
++        {.delay = 0, .data_type = TYPE2, .size = 2, .data = data_zct2133v1_1 },
++        {.delay = 0, .data_type = TYPE2, .size = 2, .data = data_zct2133v1_2 },
++        {.delay = 0, .data_type = TYPE2, .size = 2, .data = data_zct2133v1_3 },
++        {.delay = 0, .data_type = TYPE1, .size = 1, .data = data_zct2133v1_4 },
++        {.delay = 0, .data_type = TYPE1, .size = 1, .data = data_zct2133v1_5 },
++};
++
++#else
++#error "MIPI_TX_PARAM multi-delcaration!!"
++#endif // _MIPI_TX_PARAM_ZCT2133V1_H_
++luhui@luhui-b660mstx:/data/luhui/work/licheervnano-sdk-new/u-boot-2021.10/include/cvitek/cvi_panels$ cat dsi_zct2133v1.h 
++#ifndef _MIPI_TX_PARAM_ZCT2133V1_H_
++#define _MIPI_TX_PARAM_ZCT2133V1_H_
++
++#ifndef __UBOOT__
++#include <linux/vo_mipi_tx.h>
++#include <linux/cvi_comm_mipi_tx.h>
++#else
++#include <cvi_mipi.h>
++#endif
++
++#define ZCT2133V1_VACT  1280
++#define ZCT2133V1_VSA   10
++#define ZCT2133V1_VBP   34
++#define ZCT2133V1_VFP   3
++
++#define ZCT2133V1_HACT  800
++#define ZCT2133V1_HSA   80
++#define ZCT2133V1_HBP   136
++#define ZCT2133V1_HFP   56
++
++#define ZCT_PIXEL_CLK(x) ((x##_VACT + x##_VSA + x##_VBP + x##_VFP) \
++        * (x##_HACT + x##_HSA + x##_HBP + x##_HFP) * 60 / 1000)
++
++struct combo_dev_cfg_s dev_cfg_zct2133v1_800x1280 = {
++        .devno = 0,
++        .lane_id = {MIPI_TX_LANE_0, MIPI_TX_LANE_CLK, MIPI_TX_LANE_1, -1, -1},
++        .lane_pn_swap = {false, false, false, false, false},
++        .output_mode = OUTPUT_MODE_DSI_VIDEO,
++        .video_mode = BURST_MODE,
++        .output_format = OUT_FORMAT_RGB_24_BIT,
++        .sync_info = {
++                .vid_hsa_pixels = ZCT2133V1_HSA,
++                .vid_hbp_pixels = ZCT2133V1_HBP,
++                .vid_hfp_pixels = ZCT2133V1_HFP,
++                .vid_hline_pixels = ZCT2133V1_HACT,
++                .vid_vsa_lines = ZCT2133V1_VSA,
++                .vid_vbp_lines = ZCT2133V1_VBP,
++                .vid_vfp_lines = ZCT2133V1_VFP,
++                .vid_active_lines = ZCT2133V1_VACT,
++                .vid_vsa_pos_polarity = true,
++                .vid_hsa_pos_polarity = false,
++        },
++        .pixel_clk = ZCT_PIXEL_CLK(ZCT2133V1),
++};
++
++const struct hs_settle_s hs_timing_cfg_zct2133v1_800x1280 = { .prepare = 6, .zero = 32, .trail = 1 };
++
++#ifndef CVI_U8
++#define CVI_U8 unsigned char
++#endif
++
++static CVI_U8 data_zct2133v1_0[] = { 0xE1, 0x93 };
++static CVI_U8 data_zct2133v1_1[] = { 0xE2, 0x65 };
++static CVI_U8 data_zct2133v1_2[] = { 0xE3, 0xF8 };
++static CVI_U8 data_zct2133v1_3[] = { 0x80, 0x01 };
++static CVI_U8 data_zct2133v1_4[] = { 0x11 };
++static CVI_U8 data_zct2133v1_5[] = { 0x29 };
++
++// len == 1 , type 0x05
++// len == 2 , type 0x15 or type 23
++// len >= 3 , type 0x29 or type 0x39
++#define TYPE1 0x05
++#define TYPE2 0x15
++#define TYPE3 0x29
++
++const struct dsc_instr dsi_init_cmds_zct2133v1_800x1280[] = {
++        {.delay = 0, .data_type = TYPE2, .size = 2, .data = data_zct2133v1_0 },
++        {.delay = 0, .data_type = TYPE2, .size = 2, .data = data_zct2133v1_1 },
++        {.delay = 0, .data_type = TYPE2, .size = 2, .data = data_zct2133v1_2 },
++        {.delay = 0, .data_type = TYPE2, .size = 2, .data = data_zct2133v1_3 },
++        {.delay = 0, .data_type = TYPE1, .size = 1, .data = data_zct2133v1_4 },
++        {.delay = 0, .data_type = TYPE1, .size = 1, .data = data_zct2133v1_5 },
++};
++
++#else
++#error "MIPI_TX_PARAM multi-delcaration!!"
++#endif // _MIPI_TX_PARAM_ZCT2133V1_H_
+diff --git a/include/env_default.h b/include/env_default.h
+index 807026bc..8bf54533 100644
+--- a/include/env_default.h
++++ b/include/env_default.h
+@@ -52,9 +52,11 @@ const uchar default_environment[] = {
+ #ifdef	CONFIG_NORBOOTCOMMAND
+ 	"norboot="	CONFIG_NORBOOTCOMMAND		"\0"
+ #endif
++	/*
+ #ifdef CONFIG_BOOTLOGO
+ 	"showlogo="	SHOWLOGOCOMMAND			"\0"
+ #endif
++*/
+ #if defined(CONFIG_BOOTDELAY)
+ 	"bootdelay="	__stringify(CONFIG_BOOTDELAY)	"\0"
+ #endif
 diff --git a/include/sg2002_memmap.h b/include/sg2002_memmap.h
 new file mode 100644
 index 00000000..146d2137

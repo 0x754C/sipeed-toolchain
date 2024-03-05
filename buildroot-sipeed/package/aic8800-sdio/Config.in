@@ -1,0 +1,8 @@
+config BR2_PACKAGE_AIC8800_SDIO
+	bool "aic8800-sdio"
+	depends on BR2_LINUX_KERNEL
+	help
+	  aic8800 sdio wifi driver
+
+comment "aic8800 sdio needs a Linux kernel to be built"
+	depends on !BR2_LINUX_KERNEL

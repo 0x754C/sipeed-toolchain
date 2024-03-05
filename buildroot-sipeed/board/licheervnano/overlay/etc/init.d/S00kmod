@@ -1,0 +1,11 @@
+#!/bin/sh
+
+if [ "$1" = "start" ]
+then
+	. /etc/profile
+	cat /etc/modules-load.d/*.conf | sort | while read line
+	do
+		modprobe $line
+	done
+	exit 0
+fi

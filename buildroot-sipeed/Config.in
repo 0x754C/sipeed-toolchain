@@ -1,1 +1,6 @@
 source "$BR2_EXTERNAL_SIPEED_PATH/boot/fsbl-sg200x/Kconfig"
+source "$BR2_EXTERNAL_SIPEED_PATH/package/osdrv-sg200x/Config.in"
+source "$BR2_EXTERNAL_SIPEED_PATH/package/cvitek-riscv64-musl-sysroot/Config.in"
+source "$BR2_EXTERNAL_SIPEED_PATH/package/aic8800-sdio/Config.in"
+source "$BR2_EXTERNAL_SIPEED_PATH/package/aic8800-sdio-firmware/Config.in"
+source "$BR2_EXTERNAL_SIPEED_PATH/package/middleware-sg200x/Config.in"
