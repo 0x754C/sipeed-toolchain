@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-AIC8800_SDIO_VERSION = b49af456f8f461cff5ce66baf9e677b1c76e8184
+AIC8800_SDIO_VERSION = 71acda35c438a32f5c35ec5ac45c78a6304210bd
 AIC8800_SDIO_SITE = $(call github,0x754C,aic8800-sdio-linux,$(AIC8800_SDIO_VERSION))
 
 AIC8800_SDIO_MODULE_MAKE_OPTS = \
