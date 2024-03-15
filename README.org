@@ -6,7 +6,8 @@ some config file for sipeed board
 
 | board name   | linux    | boot | lcd | camera | eth | wifi | npu          | hw accel     | usb |
 |--------------+----------+------+-----+--------+-----+------+--------------+--------------+-----|
-| licheervnano | bsp 5.10 | bsp  | WIP | WIP    | OK  | OK   | no full test | no full test | OK  |
+| licheervnano | bsp 5.10 | bsp  | OK  | WIP    | OK  | OK   | no full test | no full test | OK  |
+| licheepi4a   | bsp 5.10 | bsp  |     |        |     |      |              |              |     |
 
 * usage
 

@@ -3,9 +3,33 @@
 if [ "$1" = "start" ]
 then
 	. /etc/profile
-	cat /etc/modules-load.d/*.conf | sort | while read line
-	do
-		modprobe $line
-	done
+	modprobe soph_sys
+        modprobe soph_base
+        modprobe soph_rtos_cmdqu
+        modprobe soph_fast_image
+        modprobe soph_mipi_rx
+        modprobe soph_snsr_i2c
+        modprobe soph_vi
+        modprobe soph_vpss
+        modprobe soph_dwa
+        modprobe soph_vo
+        modprobe soph_mipi_tx
+        modprobe soph_rgn
+        modprobe soph_wdt
+        modprobe soph_clock_cooling
+        modprobe soph_tpu
+        modprobe soph_vcodec
+        modprobe soph_jpeg
+        modprobe soph_vc_driver MaxVencChnNum=9 MaxVdecChnNum=9
+        modprobe soph_rtc
+        modprobe soph_ive
+        modprobe soph_mon
+        modprobe soph_pwm
+        modprobe soph_saradc
+        modprobe soph_wiegand
+        modprobe soph_fb
+	modprobe cfg80211
+	modprobe aic8800_bsp
+	modprobe aic8800_fdrv
 	exit 0
 fi
